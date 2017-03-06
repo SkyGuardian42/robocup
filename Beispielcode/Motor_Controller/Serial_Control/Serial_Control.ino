@@ -6,7 +6,7 @@ const int in4 = 2;
 const int ena = 9;  //Geschwindigkeits Pins
 const int enb = 10;
 
-const int motorSpd = 50;
+const int motorSpd = 150;
 
 int incomingByte = 0;
 
@@ -46,8 +46,8 @@ void loop() {
     case 49:  //1
       digitalWrite(in1, HIGH);
       digitalWrite(in2, LOW);
-      digitalWrite(in3, HIGH);
-      digitalWrite(in4, LOW);
+      digitalWrite(in3, LOW);
+      digitalWrite(in4, HIGH);
       break;
     case 50:  //2
       digitalWrite(in1, LOW);
