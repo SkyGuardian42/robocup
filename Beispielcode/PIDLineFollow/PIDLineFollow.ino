@@ -24,19 +24,13 @@ const int enb = 10;
 unsigned int pos;
 int error;
 int motorSpeed;
-int baseMotorSpeed = 100;
+int baseMotorSpeed = 110;
+int rightMotorSpeed;
+int leftMotorSpeed;
 //PID
-float kp = 0.2;
-float kd = 5; 
+float kp = 0.08;
+float kd = 1; 
 float lastError;
-//Utility
-int clamp(int val, int maxVal, int minVal){
-  if(val < minVal)
-    return minVal;
-  if(val > maxVal)
-    return maxVal;
-  return val;
-}
 
 void setup() {
   //Motor Controller Pins
@@ -82,20 +76,45 @@ void readValues(){
 void calculatePID(){
   error = pos - 3500;
   motorSpeed = kp * error + kd * (error - lastError);
+  Serial.print(motorSpeed);
+  Serial.print('\t');
   lastError = error;
   
 }
 void applySpeed(){
+  leftMotorSpeed = baseMotorSpeed + motorSpeed;
+  rightMotorSpeed = baseMotorSpeed - motorSpeed;
+  Serial.print(leftMotorSpeed);
+  Serial.print('\t');
+  Serial.print(rightMotorSpeed);
+  Serial.print('\t');
+  //Wenn die Motorgeschwindigkeit negativ ist, rückwärts fahren
+  if(leftMotorSpeed > 0){
+    digitalWrite(in1, LOW);
+    digitalWrite(in2, HIGH);
+    leftMotorSpeed = constrain(leftMotorSpeed, 1, 255);
+    analogWrite(enb, leftMotorSpeed);
+  } else {
+    digitalWrite(in1, HIGH);
+    digitalWrite(in2, LOW);
+    leftMotorSpeed = constrain(-leftMotorSpeed, 0, 255);
+    analogWrite(ena, leftMotorSpeed);
+  } 
   
-  analogWrite(ena, clamp(baseMotorSpeed + motorSpeed, 0, 255));
-  analogWrite(enb, clamp(baseMotorSpeed - motorSpeed, 0, 255));
-
-  digitalWrite(in1, LOW);
-  digitalWrite(in2, HIGH);
-  digitalWrite(in3, HIGH);
-  digitalWrite(in4, LOW);
+  if(rightMotorSpeed > 0){
+    digitalWrite(in3, HIGH);
+    digitalWrite(in4, LOW);
+    rightMotorSpeed = constrain(rightMotorSpeed, 1, 255);
+    analogWrite(ena, rightMotorSpeed);
+  } else {
+    digitalWrite(in3, LOW);
+    digitalWrite(in4, HIGH);
+    rightMotorSpeed = constrain(-rightMotorSpeed, 0, 255);
+    analogWrite(ena, rightMotorSpeed);
+  }
   
 }
+
 void serialDebug(){
   for (unsigned char i = 0; i < 8; i++)
   {
@@ -106,5 +125,11 @@ void serialDebug(){
   Serial.print(pos);
   Serial.print('\t');
   Serial.print("err");
-  Serial.println(error);
+  Serial.print(error);
+  Serial.print('\t');
+  Serial.print("lm:");
+  Serial.print(leftMotorSpeed);
+  Serial.print('\t');
+  Serial.print("rm:");
+  Serial.println(rightMotorSpeed);
 }
