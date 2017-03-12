@@ -10,8 +10,11 @@ const int S6 = 12;
 const int S7 = A2;
 const int S8 = 13;
 const int LEDON = A5;
+
 QTRSensorsRC qtrrc((unsigned char[]) {S1, S2, S3, S4, S5, S6, S7, S8}, 8, 2500, LEDON);
-unsigned int sensorValues[8];
+unsigned int sensorValues[8]; 
+unsigned int pos; //For Line Position
+
 //Motor Controller Pins
 const int in1 = 6;
 const int in2 = 7;
@@ -21,22 +24,14 @@ const int ena = 9;
 const int enb = 10;
 
 //Controller Variables
-unsigned int pos;
 int error;
 int motorSpeed;
-int baseMotorSpeed = 100;
+int baseMotorSpeed = 125;
+
 //PID
 float kp = 0.2;
 float kd = 5; 
 float lastError;
-//Utility
-int clamp(int val, int maxVal, int minVal){
-  if(val < minVal)
-    return minVal;
-  if(val > maxVal)
-    return maxVal;
-  return val;
-}
 
 void setup() {
   //Motor Controller Pins
@@ -46,56 +41,52 @@ void setup() {
   pinMode(in4, OUTPUT);
   
   //Calibrate Sensors
-  for (int i = 0; i < 400; i++) 
-    qtrrc.calibrate();
-  
+  for (int i = 0; i < 400; i++) qtrrc.calibrate();
+
+  //Calibrated Readings To Serial Console
   Serial.begin(9600);
   
   for (int i = 0; i < 8; i++) {
     Serial.print(qtrrc.calibratedMinimumOn[i]);
     Serial.print(' ');
   }
-  
   Serial.println();
-  
   for (int i = 0; i < 8; i++) {
     Serial.print(qtrrc.calibratedMaximumOn[i]);
     Serial.print(' ');
   }
-  
+
   Serial.println();
-  Serial.println();
-  
 }
 
 void loop() {
-  readValues();
-  calculatePID();
-  applySpeed();
-  serialDebug();
+  readValues(); //read all sensor values
+  calculatePID(); //calculate error and resulting correction
+  applySpeed(); //apply speed to motor controller
+  serialDebug();  //option task for debugging to the serial console
 }
 
-void readValues(){
+void readValues() {
   pos = qtrrc.readLine(sensorValues);
-
 }
-void calculatePID(){
-  error = pos - 3500;
+
+void calculatePID() {
+  error = pos - 3500; //line position ranges from 0 to 7000, thus we are subtracting half to get 0 as desired error
   motorSpeed = kp * error + kd * (error - lastError);
   lastError = error;
-  
 }
-void applySpeed(){
-  
-  analogWrite(ena, clamp(baseMotorSpeed + motorSpeed, 0, 255));
-  analogWrite(enb, clamp(baseMotorSpeed - motorSpeed, 0, 255));
 
+void applySpeed() {
+  analogWrite(ena, contrain(baseMotorSpeed + motorSpeed, 0, 255));
+  analogWrite(enb, constrain(baseMotorSpeed - motorSpeed, 0, 255));
+
+  //Drive forward
   digitalWrite(in1, LOW);
   digitalWrite(in2, HIGH);
   digitalWrite(in3, HIGH);
   digitalWrite(in4, LOW);
-  
 }
+
 void serialDebug(){
   for (unsigned char i = 0; i < 8; i++)
   {
